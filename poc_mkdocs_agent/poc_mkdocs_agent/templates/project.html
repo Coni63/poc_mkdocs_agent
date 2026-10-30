@@ -1,0 +1,84 @@
+<!doctype html><html><head><meta charset="utf-8"><title>__NAME__</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; color: #222; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+  #back { position: fixed; top: 8px; right: 16px; z-index: 5; padding: 4px 10px; background: #fff;
+          border: 1px solid #ccd; border-radius: 6px; font-size: 13px; color: #1a56db; text-decoration: none; }
+  #chat { position: fixed; right: 20px; bottom: 20px; width: 360px; z-index: 10; background: #fff;
+          border: 1px solid #ccd; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+          display: flex; flex-direction: column; overflow: hidden; }
+  #chat header { padding: .6rem .8rem; background: #1a56db; color: #fff; font-weight: 600; cursor: pointer; }
+  #messages { height: 340px; padding: .8rem; overflow-y: auto; font-size: 14px; display: flex; flex-direction: column; gap: .5rem; }
+  .msg { padding: .5rem .7rem; border-radius: 8px; white-space: pre-wrap; max-width: 90%; }
+  .user { align-self: flex-end; background: #e8effd; }
+  .bot { align-self: flex-start; background: #f1f2f4; }
+  .error { align-self: flex-start; background: #fde8e8; color: #9b1c1c; }
+  .hint { color: #888; font-size: 13px; }
+  #chat form { display: flex; border-top: 1px solid #dde; }
+  #chat input { flex: 1; border: 0; padding: .7rem; font: inherit; outline: none; }
+  #chat button { border: 0; background: none; padding: 0 .9rem; color: #1a56db; font-weight: 600; cursor: pointer; }
+  #chat.collapsed #messages, #chat.collapsed form { display: none; }
+</style></head><body>
+<iframe src="/site/__NAME__/"></iframe>
+<a id="back" href="/">← Projets</a>
+<div id="chat">
+  <header onclick="this.parentElement.classList.toggle('collapsed')">Chat</header>
+  <div id="messages"><div class="hint">Commandes : /question &lt;question&gt; · /update &lt;modification&gt;</div></div>
+  <form id="form"><input id="input" placeholder="/question ..." autocomplete="off"><button id="send">Envoyer</button></form>
+</div>
+<script>
+  const project = "__NAME__";
+  const sessionId = sessionStorage.getItem("sid") || crypto.randomUUID();
+  sessionStorage.setItem("sid", sessionId);
+  const messages = document.getElementById("messages");
+  const input = document.getElementById("input");
+  const send = document.getElementById("send");
+
+  function addMessage(cls, text) {
+    const el = document.createElement("div");
+    el.className = "msg " + cls;
+    el.textContent = text;
+    messages.appendChild(el);
+    messages.scrollTop = messages.scrollHeight;
+    return el;
+  }
+
+  document.getElementById("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    addMessage("user", text);
+    input.disabled = send.disabled = true;
+    try {
+      const res = await fetch(`/api/chat/${encodeURIComponent(project)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, message: text }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        addMessage("error", body.error || `Erreur ${res.status}`);
+      } else {
+        const bot = addMessage("bot", "…");
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let answer = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          answer += decoder.decode(value, { stream: true });
+          bot.textContent = answer;
+          messages.scrollTop = messages.scrollHeight;
+        }
+      }
+    } catch (err) {
+      addMessage("error", "Erreur réseau : " + err.message);
+    } finally {
+      input.disabled = send.disabled = false;
+      input.focus();
+    }
+  });
+</script>
+</body></html>

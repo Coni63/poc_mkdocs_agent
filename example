@@ -1,0 +1,3 @@
+/question comment faire le setup du proxy car dans l'entreprise, mon serveur doit passer par un proxy (sans authentification) pour accéder à sa destination.
+
+/update dans la partie installation, peux tu ajouter la commande pour installer avec poetry et uv ?

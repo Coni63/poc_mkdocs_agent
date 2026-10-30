@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "poc-mkdocs-agent"
+version = "0.1.0"
+description = ""
+authors = ["Nicolas M. <mine.nicolas@gmail.com>"]
+readme = "README.md"
+packages = [{include = "poc_mkdocs_agent"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.162.0"
+mkdocs = "^1.6.1"
+uvicorn = ">=0.30"
+openai = ">=1.0"
+python-dotenv = ">=1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
